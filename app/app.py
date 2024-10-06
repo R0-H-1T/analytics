@@ -4,6 +4,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import httpx
 from models import QnAnswers
 from helper import get_score
+import os
 
 app = FastAPI(title='Analytics')
 security = HTTPBearer()
@@ -20,7 +21,7 @@ async def home():
 async def analysis_on_qna(qna_id, credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)]):
 
     async with httpx.AsyncClient() as client:
-        r = await client.get(f'http://localhost:8083/get_qna/{qna_id}', headers={'Authorization': f'{credentials.scheme} {credentials.credentials}'})
+        r = await client.get(f'http://localhost:{os.environ.get("PORT_NO")}/get_qna/{qna_id}', headers={'Authorization': f'{credentials.scheme} {credentials.credentials}'})
         if r.status_code != status.HTTP_200_OK:
             raise HTTPException(status_code=r.status_code)
 
