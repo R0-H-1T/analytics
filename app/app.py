@@ -3,7 +3,7 @@ from fastapi import FastAPI, status, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import httpx
 from . models import QnAnswers
-from . helper import get_score
+from . helper import get_score, get_avg_score
 import os
 from dotenv import load_dotenv
 
@@ -15,7 +15,7 @@ security = HTTPBearer()
 load_dotenv()
 
 
-url = f"http://{os.environ.get('QNA_DNS')}" or f"http://localhost:{os.getenv('PORT_NO')}"
+url = f"http://localhost:{os.getenv('QNA_DNS', os.getenv('PORT_NO'))}"
 
 
 
@@ -27,10 +27,13 @@ async def home():
 
 
 @app.get('/analytics/{qna_id}', tags=['analytics'], status_code=status.HTTP_200_OK)
-async def analysis_on_qna(qna_id, credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)]):
+async def analysis_on_qna(qna_id, 
+                        #   credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)]
+                          ):
 
     async with httpx.AsyncClient() as client:
-        r = await client.get(f'{url}/get_qna/{qna_id}', headers={'Authorization': f'{credentials.scheme} {credentials.credentials}'})
+        # r = await client.get(f'{url}/get_qna/{qna_id}', headers={'Authorization': f'{credentials.scheme} {credentials.credentials}'})
+        r = await client.get(f'{url}/get_qna/{qna_id}')
         if r.status_code != status.HTTP_200_OK:
             raise HTTPException(status_code=r.status_code)
 
@@ -38,9 +41,9 @@ async def analysis_on_qna(qna_id, credentials: Annotated[HTTPAuthorizationCreden
     ques = res.get('ques')
     ans = res.get('ans')    
 
-    score = get_score(ques=ques, ans=ans)
+    score = get_avg_score(questionnaire=ques, answers=ans)
     
-    return {score: f"{score}"} 
+    return {"score": f"{score}"} 
     
 
     
